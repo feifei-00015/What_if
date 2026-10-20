@@ -84,7 +84,7 @@ Pages 本身可启用 HTTPS；云端 API 也必须是 HTTPS。站点 API Key 只
 
 ### 3. 部署后端
 
-入口限流完成后，创建 Web 函数，选择带 Node.js 20 的自定义运行时，上传 `dist/what-if-fc.zip`，启动命令设为 `npm run start:fc`，监听端口设为 `9000`。配置表格存储地址、实例、表和精确的 Pages `ALLOWED_ORIGIN`；`Origin` 值是 `https://<用户名>.github.io`，**不包含** `/<仓库名>/` 路径。`SITE_FREE_ENABLED` 默认关闭；要开放站点免费体验，显式设为 `true`，并同时配置模型服务 HTTPS `AI_BASE_URL`、`AI_MODEL` 和 `AI_API_KEY`。给函数执行角色授予表格存储目标表的读写权限，由函数运行时提供临时凭据；站点 Key 用云平台的私有环境配置或密钥服务保存，不能打印进日志。[FC Web 函数文档](https://help.aliyun.com/zh/functioncompute/creating-a-web-function)、[FC 环境变量文档](https://help.aliyun.com/zh/functioncompute/environment-variables)
+入口限流完成后，创建 Web 函数，选择带 Node.js 20 的自定义运行时，上传 `dist/what-if-fc.zip`，启动命令设为 `npm run start:fc`，监听端口设为 `9000`。为控制空闲费用，把控制台默认的最小实例数 `1` 改为 `0`；生成请求最长可等待 180 秒，函数执行超时需设置为至少 240 秒。配置表格存储地址、实例、表和精确的 Pages `ALLOWED_ORIGIN`；`Origin` 值是 `https://<用户名>.github.io`，**不包含** `/<仓库名>/` 路径。`SITE_FREE_ENABLED` 默认关闭；要开放站点免费体验，显式设为 `true`，并同时配置模型服务 HTTPS `AI_BASE_URL`、`AI_MODEL` 和 `AI_API_KEY`。给函数执行角色授予表格存储目标表的读写权限，由函数运行时提供临时凭据；站点 Key 用云平台的私有环境配置或密钥服务保存，不能打印进日志。[FC Web 函数文档](https://help.aliyun.com/zh/functioncompute/creating-a-web-function)、[FC 环境变量文档](https://help.aliyun.com/zh/functioncompute/environment-variables)
 
 入口网关需要限制请求频率和并发，后端仍需判断每个故事及全站的模型预算。先检查 FC 直接 HTTPS 入口和网关的实际报价，再选满足限流需求且账单可接受的方式。不要把“首次试用额度”当成长期预算。
 
