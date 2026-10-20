@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What_if · 每一个如果</title>
+<style>
+:root{color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#294658;background:#f5f9f8;font-synthesis:none}*{box-sizing:border-box}body{margin:0;overflow:hidden}button,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}button:focus-visible,summary:focus-visible,textarea:focus-visible{outline:2px solid #58b8c7;outline-offset:5px}[hidden]{display:none!important}
+#workspace{position:fixed;inset:0;overflow:hidden;background:radial-gradient(ellipse at 10% 65%,#dcedeb70,transparent 45%),radial-gradient(ellipse at 87% 85%,#dfedf170,transparent 45%),radial-gradient(ellipse at 65% 15%,#fff,transparent 60%),#f5f9f8}#workspace::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -60px 110px #deedf04d,inset 0 60px 110px #fff8}.mist{position:absolute;inset:0;pointer-events:none;opacity:.28;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='500'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.008' numOctaves='4' seed='8'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.15' filter='url(%23n)'/%3E%3C/svg%3E");mask-image:linear-gradient(transparent 45%,#000)}
+.topbar{position:fixed;z-index:5;top:0;left:0;right:0;height:94px;padding:20px 42px;display:flex;align-items:center;justify-content:space-between;gap:24px;background:linear-gradient(#f7fafae8,#f7fafa00);pointer-events:none}.topbar>*{pointer-events:auto}.brand{display:block;width:154px;text-decoration:none}.brand-logo{display:block;width:100%;height:auto}.brand small{display:block;margin-top:4px;font:9px/1.4 sans-serif;letter-spacing:2.35px;color:#7996a4;white-space:nowrap}.progress{min-width:220px;max-width:340px;text-align:center}.progress-track{height:2px;background:#d4e1e5;position:relative;margin:0 8px 12px}.progress-track i{display:block;height:100%;background:#83bca8;position:relative;transition:width .4s}.progress-track i::after{content:"";position:absolute;right:-5px;top:-4px;width:9px;height:9px;border-radius:50%;background:#89bdaa;box-shadow:0 0 0 3px #f5faf8,0 0 0 4px #99c2b4}#stats{font-size:11px;color:#718995;letter-spacing:.03em}.top-actions{display:flex;gap:10px;align-items:center}.quiet,.icon-button{border:1px solid #d5e2e680;background:#ffffff91;color:#446677;border-radius:10px;padding:9px 13px;font-size:12px}.quiet:hover,.icon-button:hover{background:#fff;border-color:#b2d1ca}.icon-button{font-size:20px;min-width:36px;padding:4px 9px}.quiet.primary{background:#447e71;color:#fff;border-color:#447e71}.menu{position:relative}.menu summary{list-style:none;cursor:pointer}.menu summary::-webkit-details-marker{display:none}.menu-items{position:absolute;right:0;top:44px;min-width:160px;padding:8px;display:grid;gap:5px;background:#fffffff2;border:1px solid #dce9e8;border-radius:15px;box-shadow:0 12px 35px #26485014}.menu-items button{text-align:left;border:0;background:transparent;padding:10px;color:#496878;font-size:12px;border-radius:7px}.menu-items button:hover{background:#eef6f3}
+.drawer{position:fixed;z-index:12;top:94px;left:50%;transform:translateX(-50%);width:min(610px,calc(100vw - 40px));pointer-events:none}.drawer-panel{pointer-events:auto;max-height:calc(100vh - 200px);overflow:auto;background:#fbfdfced;border:1px solid #dfebe9;border-radius:20px;box-shadow:0 18px 60px #2d59641a;backdrop-filter:blur(24px);padding:28px 32px}.drawer-handle{pointer-events:auto;display:block;margin:8px auto 0;border:1px solid #dae7e4;border-radius:999px;background:#ffffffdb;color:#6a8b91;padding:7px 18px;font-size:11px;box-shadow:0 5px 20px #24465708}.eyebrow{font-size:10px;letter-spacing:.2em;color:#82a7a2;text-transform:uppercase}.drawer h1{font:30px/1.4 Georgia,"Songti SC",serif;color:#244a50;margin:10px 0 24px}.drawer label{display:block;font-size:12px;color:#69828c;margin-bottom:16px}textarea{display:block;width:100%;resize:vertical;max-height:220px;margin-top:9px;padding:12px 14px;border:1px solid #dce8e6;border-radius:10px;background:#ffffffa6;color:#355563;line-height:1.7;font-size:14px}textarea::placeholder{color:#a2b5b9}textarea:read-only{background:#eff5f366;border-color:transparent;resize:none}.mode-control{margin:3px 0 22px;padding:15px 16px 13px;border:1px solid #dfeae7;border-radius:12px;background:#f8fbfa99}.mode-control legend{font-size:12px;color:#607f87;padding:0 5px}.mode-options{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.mode-options label{margin:0;position:relative}.mode-options input{position:absolute;opacity:0;width:1px;height:1px}.mode-options span{display:block;padding:10px 8px;border:1px solid #dfeae7;border-radius:9px;background:#ffffffa6;color:#53717a;text-align:center;font-size:13px;cursor:pointer}.mode-options small{display:block;margin-top:4px;font-size:9px;color:#91a5a8}.mode-options input:checked+span{border-color:#78b9a6;background:#eaf5f0;color:#285d59}.mode-options input:focus-visible+span{outline:2px solid #58b8c7;outline-offset:3px}.mode-options input:disabled+span{opacity:.55;cursor:default}.mode-note{margin:10px 0 0;font-size:10px;line-height:1.6;color:#82999e}.mode-apply{width:100%;margin-top:10px}.form-foot{display:flex;justify-content:space-between;align-items:center;gap:15px}.form-foot span{font-size:11px;color:#91a6a9}.frame-view{border-top:1px solid #e1eae7;margin-top:20px;padding-top:15px;font-size:12px;color:#68858b}.frame-view summary{cursor:pointer}.frame-view h3{font-size:12px;font-weight:600;margin:15px 0 4px}.frame-view ul{padding-left:18px;line-height:1.8;margin:0}
+#tree-scroll{position:absolute;inset:94px 0 55px;overflow:hidden;cursor:grab;touch-action:none;outline:none;user-select:none}#tree-scroll.dragging{cursor:grabbing}#tree{--node-scale:1;--label-scale:1;position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}.filaments{position:absolute;overflow:visible;pointer-events:none}.empty-note{position:absolute;left:8%;top:44%;font:italic 23px/1.7 Georgia,"Songti SC",serif;color:#7d9ba0;pointer-events:none}.empty-note small{font:11px/1.8 sans-serif;letter-spacing:2px;display:block;margin-top:18px;color:#a4b8bb}.bottom-bar{position:fixed;z-index:5;bottom:22px;left:38px;right:38px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;gap:24px}.bottom-bar>*{pointer-events:auto}.view-tools{display:flex;gap:6px;align-items:center;padding:5px;background:#fbfdfcc9;border:1px solid #dce8e6;border-radius:13px;backdrop-filter:blur(12px)}.view-tools button{border:0;background:transparent;color:#63828b;border-radius:7px;padding:6px 10px;font-size:12px}.view-tools button:hover{background:#e8f2ef}.view-tools .zoom-button{font-size:20px;line-height:20px}.zoom-value{font-size:10px;min-width:34px;color:#8aa0a5;text-align:center}#status{font-size:11px;color:#78919a;margin:0;max-width:60vw;line-height:1.7}#status.error{color:#a57960}.readonly-note{font-size:11px;color:#8fa4a8;margin:16px 0 0}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}@media(max-width:900px){.topbar{padding:18px 20px;height:85px}.brand{width:126px}.brand small{display:none}.progress{min-width:140px}.top-actions{gap:5px}.bottom-bar{left:16px;right:16px}.drawer{top:88px}.drawer-panel{padding:22px}.view-tools button{padding:6px}.top-actions .quiet{padding:8px}.empty-note{display:none}}
+</style>
+<link rel="stylesheet" href="./lake.css">
+<link rel="stylesheet" href="./visual/water-surface.css">
+<link rel="stylesheet" href="./visual/light-beams.css">
+<link rel="stylesheet" href="./visual/node-ripples.css">
+<link rel="stylesheet" href="./visual/memory-star-ui.css">
+</head>
+<body class="is-intro">
+<main id="workspace">
+<canvas id="water-surface" aria-hidden="true"></canvas>
+<div class="mist"></div>
+<div id="lake-intro" aria-hidden="true"></div>
+<div id="tree-scroll" tabindex="0" aria-label="故事地图，拖动或双指滑动平移，双指捏合缩放，方向键移动"><div id="tree"></div></div>
+<div id="empty-note" class="empty-note">每一个如果，<br>都有尚未抵达的后来。<small>WHAT IF, THEN WHAT?</small></div>
+</main>
+<header class="topbar">
+<div class="brand"><img class="brand-logo" src="./assets/what-if-logo.svg" alt="What_if"><small>每一个如果，都有另一种后来</small></div>
+<div class="progress"><div class="progress-track"><i id="progress-fill" style="width:0%"></i></div><div id="stats">一个念头，万千可能</div></div>
+<div class="top-actions"><button id="resume" class="quiet primary" hidden>继续推演</button><button id="stop" class="quiet" hidden>本次完成后暂停</button><button id="clear" class="quiet">新故事 ＋</button><details class="menu"><summary class="icon-button" aria-label="更多操作">···</summary><div class="menu-items"><button id="rerun">重新推演当前故事</button><button id="restore-old" hidden>恢复旧版故事</button><button id="open-api-key" hidden>配置自己的 API</button><div id="model-info" style="font-size:10px;color:#93a6ad;padding:10px">连接中…</div></div></details></div>
+</header>
+<section class="drawer" aria-label="故事输入">
+<div id="drawer-panel" class="drawer-panel">
+<div class="eyebrow">FROM MEMORY TO POSSIBILITY</div><h1 id="story-title">从真实的故事，走向另一种可能</h1>
+<p class="intro-copy">先留下已经发生的一切，再写下你想重新选择的那一刻。</p>
+<form id="form" novalidate>
+<section class="story-step" aria-labelledby="context-title">
+<header class="step-head"><span>01</span><div><h2 id="context-title">说出你的故事</h2><p>人物、时间、经历、情绪与动机，都可以慢慢说。</p></div></header>
+<label class="input-shell"><span class="sr-only">你的故事</span><textarea name="context" rows="7" maxlength="12000" required aria-describedby="context-hint context-error" placeholder="那时发生了什么？你和谁经历了什么，又有哪些话没有说出口……"></textarea></label>
+<div class="input-meta"><span id="context-hint">尽可能写下会影响后来走向的事实。</span><span id="context-error" class="field-error" aria-live="polite"></span></div>
+</section>
+<div class="step-bridge" aria-hidden="true"><i></i><span>然后，改变其中一个选择</span><i></i></div>
+<section class="story-step" aria-labelledby="scenario-title">
+<header class="step-head"><span>02</span><div><h2 id="scenario-title">如果……</h2><p>只写下你希望改变的那个选择或事件。</p></div></header>
+<label class="input-shell"><span class="sr-only">你的如果</span><textarea name="scenario" rows="2" maxlength="2000" required aria-describedby="scenario-hint scenario-error" placeholder="如果当初，我主动说出了那句话……"></textarea></label>
+<div class="input-meta"><span id="scenario-hint">这个改变会成为所有故事线的起点。</span><span id="scenario-error" class="field-error" aria-live="polite"></span></div>
+</section>
+<fieldset class="mode-control"><legend>推演模式</legend><div class="mode-options"><label><input type="radio" name="mode" value="light"><span>轻度<small>约 6–8 层 · 三阶段</small></span></label><label><input type="radio" name="mode" value="normal" checked><span>正常<small>约 8–10 层 · 三阶段</small></span></label><label><input type="radio" name="mode" value="deep"><span>深度<small>约 10–12 层 · 三阶段</small></span></label></div><p id="mode-note" class="mode-note">延续当前推演方式，最多 12 轮。</p><button id="apply-mode" class="quiet mode-apply" type="button" hidden>按此模式重新推演</button></fieldset><div id="form-foot" class="form-foot"><span id="trial-info">让这个“如果”，从故事里亮起来。</span><button class="quiet primary" type="submit">开始推演 <b aria-hidden="true">→</b></button></div></form>
+<p id="readonly-note" class="readonly-note" hidden>这是当前故事的原始输入。想改变假设，请新建故事。</p>
+<details id="frame-view" class="frame-view" hidden><summary>整理后的故事脉络</summary><div id="frame-content"></div></details>
+</div><button id="drawer-toggle" class="drawer-handle" aria-expanded="true" aria-controls="drawer-panel">收起输入 ⌃</button>
+</section>
+<div id="star-flight" aria-hidden="true" hidden><span></span></div>
+<aside id="story-panel" class="story-panel" aria-label="故事走向">
+<header class="story-panel-head"><div><small>STORY TRACE</small><h2>故事走向</h2></div><span id="path-count">0 个节点</span></header>
+<div id="story-cards" class="story-cards" aria-live="polite"></div>
+</aside>
+<footer class="bottom-bar"><p id="status" role="status">写下一个如果，开始探索。</p><div class="view-tools" aria-label="地图工具"><button id="jump-root" title="返回起点">回到起点</button><button id="zoom-out" class="zoom-button" aria-label="缩小">−</button><span id="zoom-value" class="zoom-value">100%</span><button id="zoom-in" class="zoom-button" aria-label="放大">＋</button></div></footer>
+<dialog id="api-key-dialog" aria-labelledby="api-key-title">
+<form id="api-key-form" novalidate>
+<button id="api-key-close" class="api-key-close" type="button" aria-label="关闭">×</button>
+<span class="api-key-eyebrow">CONTINUE YOUR STORY</span>
+<h2 id="api-key-title">配置我的 API</h2>
+<p id="api-key-description">填写模型服务的接口地址、模型名称和 API Key；使用个人配置时，模型费用由你的账号承担。</p>
+<label for="api-base-url-input">接口地址（Base URL）</label>
+<input id="api-base-url-input" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.example.com/v1" required>
+<small class="api-field-hint">使用兼容 Chat Completions 的 HTTPS 接口根地址，不含 /chat/completions。</small>
+<label for="api-model-input">模型名称</label>
+<input id="api-model-input" type="text" autocomplete="off" spellcheck="false" placeholder="填写服务商提供的模型 ID" required>
+<label for="api-key-input">你的 API Key</label>
+<input id="api-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="输入该模型服务的 API Key" required>
+<small>配置仅保存在当前浏览器会话；使用个人配置推演时，故事内容和 Key 经本站后端发送至你填写的接口。配置不会写入故事记录。</small>
+<div id="api-key-error" role="alert"></div>
+<div class="api-key-actions"><button id="api-key-remove" type="button" hidden>清除此会话配置</button><button type="submit">保存配置</button></div>
+</form>
+</dialog>
+<script type="module" src="./test-page.mjs"></script>
+</body>
+</html>

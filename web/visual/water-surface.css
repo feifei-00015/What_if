@@ -1,0 +1,13 @@
+/* The 8K memory atlas is the fallback; the canvas keeps the existing local refraction effect. */
+#workspace { background: #0b2027 url('./../assets/memory-star-map-8k.jpg') center / cover no-repeat; }
+#workspace::after { box-shadow: none; }
+.mist { display: none; }
+#water-surface { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+#water-surface.ready { opacity: 1; }
+.topbar { background: linear-gradient(#082b32b9, transparent); }
+.brand, .brand small, #stats, #status { color: #f5fff9; text-shadow: 0 1px 9px #103c44; }
+.progress-track { background: #e2f7ec60; }
+.empty-note { color: #f7fffa; text-shadow: 0 1px 10px #062d35; }
+.empty-note small { color: #e7f4e9; }
+body.is-intro .brand, body.is-intro .brand small { color: #f5fff9; text-shadow: 0 1px 9px #061a20; }
+@media (prefers-reduced-motion: reduce) { #water-surface { transition: none; } }

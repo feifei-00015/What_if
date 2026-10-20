@@ -1,0 +1,8 @@
+.DS_Store
+.env
+.env.local
+dist/
+.what-if-trial.json
+.what-if-trial.json.*.tmp
+What_if设计文稿.rtf
+视觉风格设计图/

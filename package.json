@@ -1,0 +1,12 @@
+{
+  "name": "what-if-link-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env.local scripts/local.mjs",
+    "start:fc": "node backend/server.mjs",
+    "demo": "node scripts/demo.mjs",
+    "test": "node --test test/*.test.mjs",
+    "pack:fc": "node scripts/pack-fc.mjs"
+  }
+}
