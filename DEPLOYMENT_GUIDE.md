@@ -25,7 +25,7 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 - 前端已可在 `web/api-config.mjs` 配置独立 API Origin；本机默认留空，公开 API 地址尚未确定。
 - `npm test` 在 2026-10-20 运行：78 项通过。测试使用模拟模型；真实模型和线上并发尚未验收。
 
-当前目录已初始化为本地 Git 仓库，但还没有 GitHub 远端和 Pages 工作流。`web/` 不是 GitHub Pages 分支发布功能可直接选择的目录；分支发布只支持仓库根目录或 `/docs`，这里用 GitHub Actions 只上传 `web/`。[GitHub 发布来源说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+当前目录已初始化为本地 Git 仓库，并备好手动触发的 Pages 工作流；还没有 GitHub 远端。`web/` 不是 GitHub Pages 分支发布功能可直接选择的目录；分支发布只支持仓库根目录或 `/docs`，这里用 GitHub Actions 只上传 `web/`。[GitHub 发布来源说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
 ## 上线前必须完成的开发
 
@@ -72,41 +72,9 @@ git status --short
 
 ### 2. 只发布 `web/`
 
-在 `.github/workflows/pages.yml` 放置以下工作流。它上传 `web/` 为 Pages 站点；不上传后端代码、环境变量或故事数据。GitHub 官方提供 `configure-pages`、`upload-pages-artifact` 和 `deploy-pages` 这套流程。[GitHub 自定义 Pages 工作流](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+`.github/workflows/pages.yml` 已准备好，只在手动运行时发布 `web/`；`API_ORIGIN` 未填入有效 HTTPS Origin 时会拒绝发布。不会上传后端代码、环境变量或故事数据。GitHub 官方提供 `configure-pages`、`upload-pages-artifact` 和 `deploy-pages` 这套流程。[GitHub 自定义 Pages 工作流](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
 
-```yaml
-name: Publish web
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: github-pages
-  cancel-in-progress: true
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: ./web
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-在 GitHub 仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。推送后查看 Actions 是否成功，并从 Pages 页面打开站点。普通项目仓库的地址通常是 `https://<用户名>.github.io/<仓库名>/`。相对资源路径要在这个带仓库名的地址下验证。[GitHub Pages 地址规则](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
+在 GitHub 仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。填好 API 地址后手动运行工作流，查看 Actions 是否成功，并从 Pages 页面打开站点。普通项目仓库的地址通常是 `https://<用户名>.github.io/<仓库名>/`。相对资源路径要在这个带仓库名的地址下验证。[GitHub Pages 地址规则](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
 
 Pages 本身可启用 HTTPS；云端 API 也必须是 HTTPS。站点 API Key 只放在后端平台配置中，不能放到 GitHub Actions 生成的前端文件里。[GitHub HTTPS 说明](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https)
 
