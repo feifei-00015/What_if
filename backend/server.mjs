@@ -276,7 +276,7 @@ export function createServer({
   return http.createServer(async (req, res) => {
     const origin = req.headers.origin;
     const corsOrigin = origin === allowedOrigin ? origin : undefined;
-    if (serveWeb && req.method === 'GET' && ['/', '/test-page.mjs', '/generation-flow.mjs', '/map-layout.mjs', '/lake.css', '/visual/water-surface.mjs', '/visual/light-beams.mjs', '/visual/water-surface.css', '/visual/light-beams.css', '/visual/node-ripples.css', '/visual/memory-star-ui.css', '/assets/lake-horizon.jpg', '/assets/lake-overhead.jpg', '/assets/lake-overhead-8k.jpg', '/assets/memory-star-map-8k.jpg', '/assets/paper-ball.svg', '/assets/what-if-logo.svg'].includes(req.url)) {
+    if (serveWeb && req.method === 'GET' && ['/', '/test-page.mjs', '/api-config.mjs', '/generation-flow.mjs', '/map-layout.mjs', '/lake.css', '/visual/water-surface.mjs', '/visual/light-beams.mjs', '/visual/water-surface.css', '/visual/light-beams.css', '/visual/node-ripples.css', '/visual/memory-star-ui.css', '/assets/lake-horizon.jpg', '/assets/lake-overhead.jpg', '/assets/lake-overhead-8k.jpg', '/assets/memory-star-map-8k.jpg', '/assets/paper-ball.svg', '/assets/what-if-logo.svg'].includes(req.url)) {
       const path = req.url === '/' ? '../web/index.html' : `../web${req.url}`;
       const body = await readFile(new URL(path, import.meta.url));
       res.writeHead(200, {
@@ -288,8 +288,9 @@ export function createServer({
       });
       return res.end(body);
     }
-    if (serveWeb && req.url === '/config' && req.method === 'GET') {
-      return send(res, 200, { model: defaultModel || '', ready: !!(baseUrl && defaultModel && storedApiKey), trial: !!trialStore });
+    if (req.url === '/config' && req.method === 'GET') {
+      if (origin && !corsOrigin) return send(res, 403, { error: '来源不允许' });
+      return send(res, 200, { model: defaultModel || '', ready: !!(baseUrl && defaultModel && storedApiKey), trial: !!trialStore }, corsOrigin);
     }
     if (req.method === 'OPTIONS') {
       if ((!['/prepare', '/generate'].includes(req.url) && !req.url?.startsWith('/trial/')) || !corsOrigin) {

@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createServer } from '../backend/server.mjs';
+import { createTrialStore } from '../backend/trial-store.mjs';
+import { apiUrl } from '../web/api-config.mjs';
 
 const frame = {
   premise: '如果分手后我主动道歉',
@@ -34,6 +36,7 @@ test('visual artwork and styles are served with their browser content types', as
     ['/visual/node-ripples.css', 'text/css'],
     ['/visual/memory-star-ui.css', 'text/css'],
     ['/visual/water-surface.mjs', 'text/javascript'],
+    ['/api-config.mjs', 'text/javascript'],
     ['/visual/light-beams.mjs', 'text/javascript'],
     ['/generation-flow.mjs', 'text/javascript'],
     ['/assets/lake-horizon.jpg', 'image/jpeg'],
@@ -47,6 +50,33 @@ test('visual artwork and styles are served with their browser content types', as
     assert.equal(response.headers.get('content-type').split(';')[0], type);
     assert.ok((await response.arrayBuffer()).byteLength > 0);
   }
+});
+
+test('static page can address a separate API origin and the API permits only its configured page origin', async t => {
+  assert.equal(apiUrl('/config'), '/config');
+  assert.equal(apiUrl('/config', 'https://api.example.com/'), 'https://api.example.com/config');
+  const pageOrigin = 'https://example.github.io';
+  const url = await startServer({
+    defaultModel: 'mock-model', storedApiKey: 'server-secret', allowedOrigin: pageOrigin,
+    trialStore: createTrialStore(),
+  }, t);
+  const config = await fetch(`${url}/config`, { headers: { Origin: pageOrigin } });
+  assert.equal(config.status, 200);
+  assert.equal(config.headers.get('access-control-allow-origin'), pageOrigin);
+  assert.equal((await config.json()).trial, true);
+  const preflight = await fetch(`${url}/trial/guest`, {
+    method: 'OPTIONS', headers: { Origin: pageOrigin, 'Access-Control-Request-Method': 'POST',
+      'Access-Control-Request-Headers': 'content-type,authorization' },
+  });
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'), pageOrigin);
+  const guest = await fetch(`${url}/trial/guest`, {
+    method: 'POST', headers: { Origin: pageOrigin, 'Content-Type': 'application/json' }, body: '{}',
+  });
+  assert.equal(guest.status, 200);
+  assert.equal(guest.headers.get('access-control-allow-origin'), pageOrigin);
+  assert.ok((await guest.json()).token);
+  assert.equal((await fetch(`${url}/config`, { headers: { Origin: 'https://wrong.example' } })).status, 403);
 });
 
 test('opening form asks for the real story before the counterfactual', async t => {

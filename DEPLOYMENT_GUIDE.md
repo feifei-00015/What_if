@@ -1,6 +1,6 @@
 # What_if 上线指南：GitHub Pages + 云端 API
 
-> 核对日期：2026-10-05。适用于目前的匿名每日免费体验和「配置我的 API」流程。
+> 核对日期：2026-10-20。适用于目前的匿名每日免费体验和「配置我的 API」流程。
 > 这是一份执行清单；当前仓库尚未完成公开部署所需的后端改造。
 
 ## 先确定发布范围
@@ -22,9 +22,10 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 - 每访客每天 2 个免费新故事、全站每天 50 个免费新故事、全站每天 1000 次模型请求的本地原型额度。
 - 服务端保管站点 API Key；个人 API Key 只在浏览器会话保存，并经后端转发。
 - 故事正文和结果保存在浏览器；`.what-if-trial.json` 只记录访客、额度和无正文的故事结构。它适合单进程验证，不适合 FC 多实例。
-- `npm test` 在 2026-10-05 运行：77 项通过。测试使用模拟模型；真实模型和线上并发尚未验收。
+- 前端已可在 `web/api-config.mjs` 配置独立 API Origin；本机默认留空，公开 API 地址尚未确定。
+- `npm test` 在 2026-10-20 运行：78 项通过。测试使用模拟模型；真实模型和线上并发尚未验收。
 
-当前目录还不是 Git 仓库，也没有已配置的 GitHub Pages 工作流。`web/` 不是 GitHub Pages 分支发布功能可直接选择的目录；分支发布只支持仓库根目录或 `/docs`，这里用 GitHub Actions 只上传 `web/`。[GitHub 发布来源说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+当前目录已初始化为本地 Git 仓库，但还没有 GitHub 远端和 Pages 工作流。`web/` 不是 GitHub Pages 分支发布功能可直接选择的目录；分支发布只支持仓库根目录或 `/docs`，这里用 GitHub Actions 只上传 `web/`。[GitHub 发布来源说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
 ## 上线前必须完成的开发
 
@@ -32,14 +33,14 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 
 | 顺序 | 工作 | 验收标准 |
 | --- | --- | --- |
-| 1 | 把前端的 `/config`、`/trial/*`、`/prepare`、`/generate` 请求改为可配置的 HTTPS API 地址 | 从 `https://<用户名>.github.io/<仓库名>/` 打开时，请求到云端 API；图片、CSS 和 JS 仍正常加载 |
+| 1 | 在 `web/api-config.mjs` 填入实际云端 HTTPS API Origin | 从 `https://<用户名>.github.io/<仓库名>/` 打开时，请求到云端 API；图片、CSS 和 JS 仍正常加载 |
 | 2 | 把访客、额度和故事结构元数据迁到共享持久数据库，并以原子操作处理分支占用、结构写入和额度扣减 | 两个后端实例同时处理同一分支，只保存一次；站点额度不会超扣或漏扣 |
 | 3 | 给公开接口加入口限流和成本控制 | 换浏览器身份、快速重复请求都不能无限消耗站点模型费用；额度耗尽后停止站点付费请求 |
 | 4 | 固定允许的网页来源，并限制个人 Base URL 的出站访问范围 | 只允许正式 Pages 来源；不能通过自定义 Base URL 访问内网、回环地址或云元数据地址 |
 | 5 | 告知用户本地故事的保留和删除规则 | 用户知道清除浏览器数据或换设备后无法恢复；新建故事会删除上一个故事及本地备份 |
 | 6 | 配置部署包、环境变量、HTTPS、日志与告警 | API 可从公网经 HTTPS 访问，日志不包含任何 Key，异常和费用能被发现 |
 
-**这些是当前缺口，不是已经可直接点击启用的配置。**前端目前使用相对路径请求 API；FC 入口还要求 `TRIAL_STORE_FILE`，现有 `pack:fc` 包不含共享数据库适配器。不能直接把当前 ZIP 上传 FC 当成公开版。FC 实例本地文件在回收后会丢失；即使挂载共享文件，当前进程内的写入队列也不能保护跨实例更新。[阿里云 FC 文件说明](https://www.alibabacloud.com/help/en/functioncompute/creating-a-web-function)
+**这些是当前缺口，不是已经可直接点击启用的配置。**前端在 `API_ORIGIN` 留空时仍使用同域 API；FC 入口还要求 `TRIAL_STORE_FILE`，现有 `pack:fc` 包不含共享数据库适配器。不能直接把当前 ZIP 上传 FC 当成公开版。FC 实例本地文件在回收后会丢失；即使挂载共享文件，当前进程内的写入队列也不能保护跨实例更新。[阿里云 FC 文件说明](https://www.alibabacloud.com/help/en/functioncompute/creating-a-web-function)
 
 匿名访客凭证可以通过清除站点数据重置，不能作为防刷身份。`Origin`/CORS 只限制浏览器跨站访问，不能阻止脚本直接调用 API。服务端必须保留全站预算，并考虑按 IP/账号/挑战机制限流。当前仅验证个人 Base URL 是 HTTPS，公开前还要防止服务端请求伪造。[OWASP SSRF 指南](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html)
 
@@ -60,10 +61,9 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 
 ### 1. 创建 Git 仓库并检查文件
 
-先检查 `.gitignore` 已排除 `.env.local`、`.what-if-trial.json` 和 `dist/`。首次提交只选择要公开的代码和工作流；不要直接 `git add .` 把备份、设计源文件或个人资料一起放进公开仓库。
+本地 `main` 已建立并完成一次初始提交；`.gitignore` 已排除 `.env.local`、`.what-if-trial.json`、`dist/` 和设计源文件。推送前仍要检查待提交列表；不要直接 `git add .` 把备份或个人资料放进公开仓库。
 
 ```bash
-git init -b main
 git add web backend scripts test package.json .gitignore .github DEPLOYMENT_GUIDE.md
 git status --short
 ```

@@ -2,6 +2,7 @@ import { layoutTree, zoomAt } from './map-layout.mjs';
 import { generationPhase, plannedLevels, storyProgress, SUBTREE_STRATEGY, SUBTREE_MODES, isSubtreeStrategy, subtreeTask, subtreeProgress, markSubtreeStage } from './generation-flow.mjs';
 import { createStoryBeams } from './visual/light-beams.mjs';
 import { createWaterSurface } from './visual/water-surface.mjs';
+import { apiUrl } from './api-config.mjs';
 const STORAGE_KEY = 'what-if-tree-v2';
 const BACKUP_KEY = 'what-if-tree-v2-backup';
 const REBUILD_KEY = 'what-if-tree-v2-rebuild';
@@ -151,7 +152,7 @@ function updateTrialNote() {
 }
 
 async function trialFetch(path, options = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers: { 'Content-Type': 'application/json', ...(guestToken ? { Authorization: `Bearer ${guestToken}` } : {}) },
   });
@@ -316,7 +317,7 @@ function leafStats(source = tree) {
 }
 
 async function prepareStory(source = tree) {
-  const response = await fetch('/prepare', {
+  const response = await fetch(apiUrl('/prepare'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(trialEnabled ? { Authorization: `Bearer ${guestToken}` } : {}),
       ...(trialEnabled && source.funding === 'own' ? { 'X-User-Api-Key': ownApiKey } : {}) },
@@ -330,7 +331,7 @@ async function prepareStory(source = tree) {
 }
 
 async function generate(source, node, path, levels, stage) {
-  const response = await fetch('/generate', {
+  const response = await fetch(apiUrl('/generate'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(trialEnabled ? { Authorization: `Bearer ${guestToken}` } : {}),
       ...(trialEnabled && source.funding === 'own' ? { 'X-User-Api-Key': ownApiKey } : {}) },
@@ -1214,7 +1215,7 @@ if (tree) {
     : capped ? isSubtreeStrategy(tree.generationStrategy) ? '已恢复故事树；部分故事线保留开放结尾。' : `已恢复故事树；部分故事线到达 ${roundLimit()} 轮目标。` : '已恢复完整的故事树。';
 }
 try {
-  const response = await fetch('/config');
+  const response = await fetch(apiUrl('/config'));
   const config = await response.json();
   trialEnabled = config.trial === true;
   siteReady = config.ready === true;
