@@ -1,7 +1,7 @@
 # What_if 上线指南：GitHub Pages + 云端 API
 
 > 核对日期：2026-10-20。适用于目前的匿名每日免费体验和「配置我的 API」流程。
-> 这是一份执行清单；当前仓库尚未完成公开部署所需的后端改造。
+> 这是一份执行清单；共享状态和出站地址限制已实现，但云端连通、限流和正式域名尚未验收。
 
 ## 先确定发布范围
 
@@ -21,11 +21,15 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 - 页面、模型请求、分支校验和部分异常回复自动重试。
 - 每访客每天 2 个免费新故事、全站每天 50 个免费新故事、全站每天 1000 次模型请求的本地原型额度。
 - 服务端保管站点 API Key；个人 API Key 只在浏览器会话保存，并经后端转发。
-- 故事正文和结果保存在浏览器；`.what-if-trial.json` 只记录访客、额度和无正文的故事结构。它适合单进程验证，不适合 FC 多实例。
+- 故事正文和结果保存在浏览器；本机的 `.what-if-trial.json` 只记录访客、额度和无正文的故事结构。
+- FC 入口已改为使用 Tablestore 共享状态，通过条件写入防止多实例同时突破额度。当前采用单行压缩状态，适合小范围试运行；大规模并发和容量仍需云端实测。
+- 个人模型地址已阻止内网、本机和云元数据地址；免费体验默认关闭，需显式设置 `SITE_FREE_ENABLED=true` 才会使用站点 Key。
 - 前端已可在 `web/api-config.mjs` 配置独立 API Origin；本机默认留空，公开 API 地址尚未确定。
-- `npm test` 在 2026-10-20 运行：78 项通过。测试使用模拟模型；真实模型和线上并发尚未验收。
+- `npm test` 在 2026-10-20 运行：80 项通过。测试使用模拟模型和模拟表格存储；真实模型与线上并发尚未验收。
 
 当前目录已初始化为本地 Git 仓库，并备好手动触发的 Pages 工作流；还没有 GitHub 远端。`web/` 不是 GitHub Pages 分支发布功能可直接选择的目录；分支发布只支持仓库根目录或 `/docs`，这里用 GitHub Actions 只上传 `web/`。[GitHub 发布来源说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+
+当前选择的杭州地域正式对外提供 FC API，需要准备已备案并接入阿里云的自定义域名、域名解析与 HTTPS 证书。FC 默认公网域名仅供测试；没有域名时只能先完成云端测试，不能按正式版发布。[阿里云默认域名限制](https://help.aliyun.com/zh/functioncompute/the-default-public-network-domain-name-of-function-compute-is-not-allowed-in-the-production-environment)、[自定义域名配置](https://help.aliyun.com/zh/functioncompute/configure-custom-domain-names)
 
 ## 上线前必须完成的开发
 
@@ -34,15 +38,15 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 | 顺序 | 工作 | 验收标准 |
 | --- | --- | --- |
 | 1 | 在 `web/api-config.mjs` 填入实际云端 HTTPS API Origin | 从 `https://<用户名>.github.io/<仓库名>/` 打开时，请求到云端 API；图片、CSS 和 JS 仍正常加载 |
-| 2 | 把访客、额度和故事结构元数据迁到共享持久数据库，并以原子操作处理分支占用、结构写入和额度扣减 | 两个后端实例同时处理同一分支，只保存一次；站点额度不会超扣或漏扣 |
+| 2 | 在云端创建 Tablestore 表，验证共享状态条件写入并测出并发承载能力 | 两个后端实例同时处理同一分支，只保存一次；站点额度不会超扣或漏扣 |
 | 3 | 给公开接口加入口限流和成本控制 | 换浏览器身份、快速重复请求都不能无限消耗站点模型费用；额度耗尽后停止站点付费请求 |
 | 4 | 固定允许的网页来源，并限制个人 Base URL 的出站访问范围 | 只允许正式 Pages 来源；不能通过自定义 Base URL 访问内网、回环地址或云元数据地址 |
 | 5 | 告知用户本地故事的保留和删除规则 | 用户知道清除浏览器数据或换设备后无法恢复；新建故事会删除上一个故事及本地备份 |
 | 6 | 配置部署包、环境变量、HTTPS、日志与告警 | API 可从公网经 HTTPS 访问，日志不包含任何 Key，异常和费用能被发现 |
 
-**这些是当前缺口，不是已经可直接点击启用的配置。**前端在 `API_ORIGIN` 留空时仍使用同域 API；FC 入口还要求 `TRIAL_STORE_FILE`，现有 `pack:fc` 包不含共享数据库适配器。不能直接把当前 ZIP 上传 FC 当成公开版。FC 实例本地文件在回收后会丢失；即使挂载共享文件，当前进程内的写入队列也不能保护跨实例更新。[阿里云 FC 文件说明](https://www.alibabacloud.com/help/en/functioncompute/creating-a-web-function)
+前端在 `API_ORIGIN` 留空时仍使用同域 API。FC 入口现在使用 `TABLESTORE_ENDPOINT`、`TABLESTORE_INSTANCE`、`TABLESTORE_TABLE`。需要在同地域创建一张主键 `id`、类型 `String` 的数据表；代码会使用 `id=global` 的一行，属性列 `data` 和 `revision` 为字符串。表格存储实例可使用公网或 VPC 地址，函数网络配置需匹配该地址。函数执行角色必须有这张表的读取和写入权限。部署前运行 `npm ci` 和 `npm run pack:fc`；压缩包里包括 SDK 依赖。单行属性列有 2 MB 上限，当前代码在接近上限时停止写入，因此云端容量与并发压测仍是公开前的必过项。[表格存储单列限制](https://help.aliyun.com/en/tablestore/table-store-service/use-cases/table-design)
 
-匿名访客凭证可以通过清除站点数据重置，不能作为防刷身份。`Origin`/CORS 只限制浏览器跨站访问，不能阻止脚本直接调用 API。服务端必须保留全站预算，并考虑按 IP/账号/挑战机制限流。当前仅验证个人 Base URL 是 HTTPS，公开前还要防止服务端请求伪造。[OWASP SSRF 指南](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html)
+匿名访客凭证可以通过清除站点数据重置，不能作为防刷身份。`Origin`/CORS 只限制浏览器跨站访问，不能阻止脚本直接调用 API。服务端保留全站预算，但仍需入口限流。个人 Base URL 已验证 HTTPS，并在实际连接时拒绝内网地址；云端应再测试 DNS、代理和网络策略。[OWASP SSRF 指南](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html)
 
 个人 API Key 也是敏感凭据。GitHub 提醒 Pages 不适合处理密码、信用卡等敏感交易；公开个人 Key 输入前，要明确告知用户它只保存在当前浏览器会话、会发送到本站后端，并检查页面脚本和跨站脚本风险。[GitHub HTTPS 与敏感信息说明](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https)
 
@@ -80,7 +84,7 @@ Pages 本身可启用 HTTPS；云端 API 也必须是 HTTPS。站点 API Key 只
 
 ### 3. 部署后端
 
-在完成共享数据库和限流改造后，创建 Node.js Web 函数，并配置：模型服务 HTTPS Base URL、模型名称、站点 Key、精确的 Pages `Origin`、数据库连接和函数端口。`Origin` 是 `https://<用户名>.github.io`，**不包含** `/<仓库名>/` 路径。Key 用云平台的私有环境配置或密钥服务保存；FC 环境变量支持静态加密，但仍不能把它打印进日志。[FC 环境变量文档](https://www.alibabacloud.com/help/en/functioncompute/environment-variables)
+入口限流完成后，创建 Web 函数，选择带 Node.js 20 的自定义运行时，上传 `dist/what-if-fc.zip`，启动命令设为 `npm run start:fc`，监听端口设为 `9000`。配置表格存储地址、实例、表和精确的 Pages `ALLOWED_ORIGIN`；`Origin` 值是 `https://<用户名>.github.io`，**不包含** `/<仓库名>/` 路径。`SITE_FREE_ENABLED` 默认关闭；要开放站点免费体验，显式设为 `true`，并同时配置模型服务 HTTPS `AI_BASE_URL`、`AI_MODEL` 和 `AI_API_KEY`。给函数执行角色授予表格存储目标表的读写权限，由函数运行时提供临时凭据；站点 Key 用云平台的私有环境配置或密钥服务保存，不能打印进日志。[FC Web 函数文档](https://help.aliyun.com/zh/functioncompute/creating-a-web-function)、[FC 环境变量文档](https://help.aliyun.com/zh/functioncompute/environment-variables)
 
 入口网关需要限制请求频率和并发，后端仍需判断每个故事及全站的模型预算。先检查 FC 直接 HTTPS 入口和网关的实际报价，再选满足限流需求且账单可接受的方式。不要把“首次试用额度”当成长期预算。
 

@@ -80,12 +80,13 @@ function stripLegacy(data) {
   return { version: 2, guests: data.guests || {}, stories, days: data.days || {} };
 }
 
-export function createTrialStore(filePath, { now = Date.now, limits = {} } = {}) {
+export function createTrialStore(filePath, { now = Date.now, limits = {}, stateBackend } = {}) {
   const caps = { ...DEFAULT_LIMITS, ...limits };
   let pending = Promise.resolve();
   let memory = { version: 2, guests: {}, stories: {}, days: {} };
 
   async function load() {
+    if (stateBackend) return (await stateBackend.load()).data;
     if (!filePath) return memory;
     try { return stripLegacy(JSON.parse(await readFile(filePath, 'utf8'))); }
     catch (error) {
@@ -96,6 +97,15 @@ export function createTrialStore(filePath, { now = Date.now, limits = {} } = {})
 
   async function change(action) {
     const task = pending.then(async () => {
+      if (stateBackend) {
+        for (let attempt = 0; attempt < 30; attempt++) {
+          const { data, revision } = await stateBackend.load();
+          const result = action(data);
+          if (await stateBackend.save(data, revision)) return result;
+          await new Promise(resolve => setTimeout(resolve, Math.min(100, 5 + attempt * 5)));
+        }
+        throw new TrialError(503, '访问人数较多，请稍后重试');
+      }
       const data = await load();
       const result = action(data);
       if (filePath) {

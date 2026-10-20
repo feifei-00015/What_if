@@ -8,5 +8,13 @@
     "demo": "node scripts/demo.mjs",
     "test": "node --test test/*.test.mjs",
     "pack:fc": "node scripts/pack-fc.mjs"
+  },
+  "dependencies": {
+    "ipaddr.js": "^2.2.0",
+    "tablestore": "^5.6.6",
+    "undici": "^6.29.1"
+  },
+  "overrides": {
+    "protobufjs": "7.6.5"
   }
 }

@@ -230,6 +230,8 @@ test('invalid personal API config makes no model calls and releases the claim fo
     { baseUrl: 'https://user:secret@personal.example/v1', model: 'personal-model' },
     { baseUrl: 'https://personal.example/v1?key=secret', model: 'personal-model' },
     { baseUrl: 'https://personal.example/v1/chat/completions', model: 'personal-model' },
+    { baseUrl: 'https://127.0.0.1/v1', model: 'personal-model' },
+    { baseUrl: 'https://169.254.169.254/v1', model: 'personal-model' },
     { baseUrl: 'https://personal.example/v1', model: '' },
   ]) {
     assert.equal((await app.post('/prepare', { storyId: story.id, modelConfig }, token, 'personal-key')).status, 400);

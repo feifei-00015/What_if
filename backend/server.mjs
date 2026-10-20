@@ -1,7 +1,10 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { fetch as modelFetch } from 'undici';
 import { FORMAT_REPAIR_PROMPT, REPAIR_PROMPT, STRUCTURE_PROMPT, generationPrompt, subtreePrompt, ROUTE_SELECTION_PROMPT } from './prompt.mjs';
 import { createTrialStore, TrialError } from './trial-store.mjs';
+import { createTablestoreState } from './tablestore-state.mjs';
+import { assertPublicModelUrl, modelDispatcher } from './model-network.mjs';
 import { convergenceDepth, generationPhase, SUBTREE_MODES, isSubtreeStrategy, subtreeTask } from '../web/generation-flow.mjs';
 
 const MAX_BODY_BYTES = 128 * 1024;
@@ -198,6 +201,7 @@ async function requestModel({ fetchImpl, baseUrl, apiKey, model, prompt, input, 
     const upstream = await fetchImpl(endpoint, {
       method: 'POST',
       redirect: 'error',
+      dispatcher: modelDispatcher,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
@@ -269,7 +273,7 @@ export function createServer({
   defaultModel = process.env.AI_MODEL,
   storedApiKey = process.env.AI_API_KEY,
   allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:8000',
-  fetchImpl = fetch,
+  fetchImpl = modelFetch,
   serveWeb = false,
   trialStore,
 } = {}) {
@@ -331,8 +335,9 @@ export function createServer({
         }
         return send(res, 404, { error: '接口不存在' }, corsOrigin);
       } catch (error) {
-        return send(res, error instanceof TrialError ? error.status : 400,
-          { error: error instanceof TrialError ? error.message : '请输入有效的 JSON' }, corsOrigin);
+        return send(res, error instanceof TrialError ? error.status : error instanceof SyntaxError ? 400 : 503,
+          { error: error instanceof TrialError ? error.message
+            : error instanceof SyntaxError ? '请输入有效的 JSON' : '服务暂时不可用，请稍后重试' }, corsOrigin);
       }
     }
     if (!['/prepare', '/generate'].includes(req.url) || req.method !== 'POST') {
@@ -380,7 +385,8 @@ export function createServer({
           input = { frame, branchState, currentEvent, legacyPath, ...claim.input };
         }
       } catch (error) {
-        return send(res, error instanceof TrialError ? error.status : 500, { error: error.message }, corsOrigin);
+        return send(res, error instanceof TrialError ? error.status : 503,
+          { error: error instanceof TrialError ? error.message : '服务暂时不可用，请稍后重试' }, corsOrigin);
       }
     }
 
@@ -390,6 +396,7 @@ export function createServer({
         parsedBaseUrl = new URL(effectiveBaseUrl);
         if (parsedBaseUrl.protocol !== 'https:' || parsedBaseUrl.username || parsedBaseUrl.password ||
             parsedBaseUrl.search || parsedBaseUrl.hash || /\/chat\/completions\/?$/.test(parsedBaseUrl.pathname)) throw new Error();
+        assertPublicModelUrl(parsedBaseUrl);
       } catch {
         throw new TrialError(400, '请输入有效的 HTTPS 模型接口根地址，不含 /chat/completions、账号密码或查询参数');
       }
@@ -601,17 +608,26 @@ export function createServer({
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
-  if (!process.env.TRIAL_STORE_FILE) {
-    throw new Error('公开接口需要 TRIAL_STORE_FILE 指向持久化存储；云函数多实例部署还需要共享数据库适配器');
+  if (!process.env.TABLESTORE_TABLE) {
+    throw new Error('公开接口需要配置共享的 TABLESTORE_TABLE');
   }
+  const freeEnabled = process.env.SITE_FREE_ENABLED === 'true';
   const baseUrl = process.env.AI_BASE_URL;
-  if (!baseUrl || new URL(baseUrl).protocol !== 'https:') {
-    throw new Error('AI_BASE_URL 必须是 HTTPS 地址，并包含 API 版本路径，例如 https://example.com/v1');
+  if (freeEnabled && (!baseUrl || new URL(baseUrl).protocol !== 'https:' ||
+      !process.env.AI_MODEL || !process.env.AI_API_KEY)) {
+    throw new Error('启用免费体验前，必须配置 HTTPS AI_BASE_URL、AI_MODEL 和 AI_API_KEY');
   }
   const port = Number(process.env.CAPort || process.env.PORT || 9000);
-  const trialStore = createTrialStore(process.env.TRIAL_STORE_FILE);
-  await trialStore.scrubLegacy();
-  createServer({ trialStore }).listen(port, '0.0.0.0', () => {
+  const stateBackend = createTablestoreState({
+    endpoint: process.env.TABLESTORE_ENDPOINT,
+    instance: process.env.TABLESTORE_INSTANCE,
+    table: process.env.TABLESTORE_TABLE,
+  });
+  await stateBackend.load();
+  const trialStore = createTrialStore(null, { stateBackend,
+    limits: freeEnabled ? {} : { guestStoriesPerDay: 0, siteStoriesPerDay: 0, siteModelCallsPerDay: 0 } });
+  createServer({ trialStore, storedApiKey: freeEnabled ? process.env.AI_API_KEY : null })
+    .listen(port, '0.0.0.0', () => {
     console.log(`What_if API listening on ${port}`);
   });
 }
