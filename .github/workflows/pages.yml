@@ -16,15 +16,23 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
-      - name: Verify API origin
+      - name: Set API origin for test site
+        env:
+          API_ORIGIN: https://what-if-api-cyswmrtfbi.cn-hangzhou.fcapp.run
         run: |
           node --input-type=module -e "
-            import { API_ORIGIN } from './web/api-config.mjs';
+            import { readFileSync, writeFileSync } from 'node:fs';
+            const API_ORIGIN = process.env.API_ORIGIN;
             if (!API_ORIGIN) throw new Error('Set web/api-config.mjs API_ORIGIN before publishing');
             const url = new URL(API_ORIGIN);
             if (url.protocol !== 'https:' || API_ORIGIN !== url.origin) {
               throw new Error('Set web/api-config.mjs API_ORIGIN to the HTTPS API origin before publishing');
             }
+            const path = './web/api-config.mjs';
+            const source = readFileSync(path, 'utf8');
+            const marker = \"export const API_ORIGIN = '';\";
+            if (!source.includes(marker)) throw new Error('API origin marker is missing');
+            writeFileSync(path, source.replace(marker, 'export const API_ORIGIN = ' + JSON.stringify(API_ORIGIN) + ';'));
           "
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
