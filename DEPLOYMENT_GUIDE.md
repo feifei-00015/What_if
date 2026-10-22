@@ -1,7 +1,19 @@
 # What_if 上线指南：GitHub Pages + 云端 API
 
-> 核对日期：2026-10-20。适用于目前的匿名每日免费体验和「配置我的 API」流程。
-> 这是一份执行清单；共享状态和出站地址限制已实现，但云端连通、限流和正式域名尚未验收。
+> 核对日期：2026-10-22。适用于目前的匿名每日免费体验和「配置我的 API」流程。
+> 测试版已经发布，网页、云端 API、受限跨域和 Tablestore 读写已连通；真实模型完整推演、云端并发、入口限流和正式域名尚未验收。
+
+## 当前测试版
+
+- 测试网址：https://feifei-00015.github.io/What_if/
+- 代码仓库：https://github.com/feifei-00015/What_if
+- API 测试地址：https://what-if-api-cyswmrtfbi.cn-hangzhou.fcapp.run
+- 2026-10-22 发布运行 [39744418216](https://github.com/feifei-00015/What_if/actions/runs/39744418216) 成功，对应网页提交 `6ffde90`。浏览器已验证首页、访客初始化和通用 API 配置弹窗；免费体验关闭时显示「免费体验暂未开放」。
+- FC 函数 `what-if-api` 位于杭州，启动命令 `npm run start:fc`，端口 `9000`，超时 `240` 秒，0.35 vCPU / 512 MB 内存，单实例并发度 `20`。允许的网页来源是 `https://feifei-00015.github.io`。
+- Tablestore 实例 `what-if-state`、表 `trial_state` 已配置，使用 VPC 地址，公网访问关闭。函数通过 RAM 角色读写元数据。
+- `SITE_FREE_ENABLED=false`，云端未配置站点模型 Key。当前测试者需要自行配置兼容 Chat Completions 的模型服务。
+- 每月 20 元是预算目标，目前没有设置达到 20 元自动停机的硬性限制；FC 和 Tablestore 仍可能产生用量费用。不能据此保证账单不超过 20 元。
+- 下一项验收：在网页配置个人模型，完成一次轻度推演，再验证刷新恢复和新故事清除旧结果。暂未完成真实模型及 100 人并发验收。
 
 ## 先确定发布范围
 
@@ -24,10 +36,10 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 - 故事正文和结果保存在浏览器；本机的 `.what-if-trial.json` 只记录访客、额度和无正文的故事结构。
 - FC 入口已改为使用 Tablestore 共享状态，通过条件写入防止多实例同时突破额度。当前采用单行压缩状态，适合小范围试运行；大规模并发和容量仍需云端实测。
 - 个人模型地址已阻止内网、本机和云元数据地址；免费体验默认关闭，需显式设置 `SITE_FREE_ENABLED=true` 才会使用站点 Key。
-- 前端已可在 `web/api-config.mjs` 配置独立 API Origin；本机默认留空，公开 API 地址尚未确定。
+- 前端通过 `web/api-config.mjs` 配置独立 API Origin；本机默认留空，Pages 工作流在发布时注入上述 API 测试地址。
 - `npm test` 在 2026-10-20 运行：80 项通过。测试使用模拟模型和模拟表格存储；真实模型与线上并发尚未验收。
 
-当前目录已初始化为本地 Git 仓库，并备好手动触发的 Pages 工作流；还没有 GitHub 远端。`web/` 不是 GitHub Pages 分支发布功能可直接选择的目录；分支发布只支持仓库根目录或 `/docs`，这里用 GitHub Actions 只上传 `web/`。[GitHub 发布来源说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+当前目录已经推送到上述 GitHub 仓库，并启用手动触发的 Pages 工作流。`web/` 不是 GitHub Pages 分支发布功能可直接选择的目录；分支发布只支持仓库根目录或 `/docs`，这里用 GitHub Actions 只上传 `web/`。[GitHub 发布来源说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
 当前选择的杭州地域正式对外提供 FC API，需要准备已备案并接入阿里云的自定义域名、域名解析与 HTTPS 证书。FC 默认公网域名仅供测试；没有域名时只能先完成云端测试，不能按正式版发布。[阿里云默认域名限制](https://help.aliyun.com/zh/functioncompute/the-default-public-network-domain-name-of-function-compute-is-not-allowed-in-the-production-environment)、[自定义域名配置](https://help.aliyun.com/zh/functioncompute/configure-custom-domain-names)
 
@@ -37,7 +49,7 @@ GitHub Pages 在 GitHub Free 的公开仓库可用，只托管 HTML/CSS/JavaScri
 
 | 顺序 | 工作 | 验收标准 |
 | --- | --- | --- |
-| 1 | 在 `web/api-config.mjs` 填入实际云端 HTTPS API Origin | 从 `https://<用户名>.github.io/<仓库名>/` 打开时，请求到云端 API；图片、CSS 和 JS 仍正常加载 |
+| 1 | 在 Pages 工作流中配置实际云端 HTTPS API Origin（测试版已完成） | 从 `https://<用户名>.github.io/<仓库名>/` 打开时，请求到云端 API；图片、CSS 和 JS 仍正常加载 |
 | 2 | 在云端创建 Tablestore 表，验证共享状态条件写入并测出并发承载能力 | 两个后端实例同时处理同一分支，只保存一次；站点额度不会超扣或漏扣 |
 | 3 | 给公开接口加入口限流和成本控制 | 换浏览器身份、快速重复请求都不能无限消耗站点模型费用；额度耗尽后停止站点付费请求 |
 | 4 | 固定允许的网页来源，并限制个人 Base URL 的出站访问范围 | 只允许正式 Pages 来源；不能通过自定义 Base URL 访问内网、回环地址或云元数据地址 |
@@ -76,7 +88,7 @@ git status --short
 
 ### 2. 只发布 `web/`
 
-`.github/workflows/pages.yml` 已准备好，只在手动运行时发布 `web/`；`API_ORIGIN` 未填入有效 HTTPS Origin 时会拒绝发布。不会上传后端代码、环境变量或故事数据。GitHub 官方提供 `configure-pages`、`upload-pages-artifact` 和 `deploy-pages` 这套流程。[GitHub 自定义 Pages 工作流](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+`.github/workflows/pages.yml` 只在手动运行时发布 `web/`，并向发布副本的 `web/api-config.mjs` 注入 API 地址；工作流中的 `API_ORIGIN` 不是有效 HTTPS Origin 时会拒绝发布。Pages 产物不会包含后端代码、环境变量或故事数据；公开代码仓库仍包含后端源码。GitHub 官方提供 `configure-pages`、`upload-pages-artifact` 和 `deploy-pages` 这套流程。[GitHub 自定义 Pages 工作流](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
 
 在 GitHub 仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。填好 API 地址后手动运行工作流，查看 Actions 是否成功，并从 Pages 页面打开站点。普通项目仓库的地址通常是 `https://<用户名>.github.io/<仓库名>/`。相对资源路径要在这个带仓库名的地址下验证。[GitHub Pages 地址规则](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
 
