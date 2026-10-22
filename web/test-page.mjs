@@ -141,11 +141,10 @@ document.querySelector('#api-key-form').addEventListener('submit', event => {
 function updateTrialNote() {
   if (!trialInfo) return;
   const note = document.querySelector('#trial-info');
-  note.textContent = trialInfo.activeStoryId
-    ? '当前故事可暂停后继续'
-    : trialInfo.remainingToday > 0 && !siteQuotaExhausted
-      ? `免费体验 · 今天还可新建 ${trialInfo.remainingToday} 个故事`
-      : `${siteQuotaExhausted ? '本站免费额度已用完' : '免费次数已用完'} · ${hasOwnApiConfig() ? '已配置个人 API' : '可配置个人 API'}`;
+  if (trialInfo.activeStoryId) note.textContent = '当前故事可暂停后继续';
+  else if (!siteReady) note.textContent = `免费体验暂未开放 · ${hasOwnApiConfig() ? '已配置个人 API' : '可配置个人 API'}`;
+  else if (trialInfo.remainingToday > 0 && !siteQuotaExhausted) note.textContent = `免费体验 · 今天还可新建 ${trialInfo.remainingToday} 个故事`;
+  else note.textContent = `${siteQuotaExhausted ? '本站免费额度已用完' : '免费次数已用完'} · ${hasOwnApiConfig() ? '已配置个人 API' : '可配置个人 API'}`;
   keyMenuButton.textContent = hasOwnApiConfig() ? '管理我的 API' : '配置自己的 API';
   modelInfo.textContent = (tree?.funding === 'own' || !siteReady || trialInfo.remainingToday === 0 || siteQuotaExhausted) && hasOwnApiConfig()
     ? `个人模型 · ${ownModel}` : siteReady ? `本站模型 · ${siteModel}` : '尚未配置模型 API';
