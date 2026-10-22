@@ -73,7 +73,7 @@ function openKeyDialog() {
     ? '填写接口地址、模型名称和 API Key，使用自己的模型服务继续推演；模型费用由你的账号承担。'
     : trialInfo?.remainingToday > 0 && !siteQuotaExhausted
       ? '可以提前配置自己的模型服务；今天剩余的免费故事会优先使用站点额度。使用个人配置时，模型费用由你的账号承担。'
-      : `${siteQuotaExhausted ? '本站今天的免费额度已用完。' : '今天的两次免费故事已用完。'}填写接口地址、模型名称和 API Key 后可以继续创建故事；模型费用由你的账号承担。`;
+      : `${siteQuotaExhausted ? '本站今天的免费额度已用完。' : '今天的免费故事次数已用完。'}填写接口地址、模型名称和 API Key 后可以继续创建故事；模型费用由你的账号承担。`;
   baseUrlInput.value = ownBaseUrl;
   modelInput.value = ownModel;
   keyInput.value = ownApiKey;

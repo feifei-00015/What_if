@@ -68,7 +68,7 @@ async function setup(t, limits = {}, serverOptions = {}) {
     setReply(value) { reply = value; } };
 }
 
-test('guest token survives store restart and unfinished story resumes without another daily start', async t => {
+test('guest token survives store restart and one daily story resumes without another start', async t => {
   const app = await setup(t);
   const guest = (await app.post('/trial/guest', {})).body;
   const sameGuest = (await app.post('/trial/guest', { token: guest.token })).body;
@@ -99,16 +99,24 @@ test('guest token survives store restart and unfinished story resumes without an
   assert.equal((await app.post('/generate', { storyId: story.id, branchId: story.root.id, levels: 3 }, guest.token)).status, 409);
   assert.equal(app.calls, 2);
   assert.equal((await resumed.getStory(guest.token, story.id)).status, 'complete');
-  assert.equal((await resumed.status(guest.token)).remainingToday, 1);
-  assert.equal((await resumed.status(guest.token)).keyPromptRequired, false);
-  const second = (await app.post('/trial/stories', { scenario: '另一个如果', context: '另一段故事。', mode: 'light' }, guest.token)).body.story;
-  await app.post('/prepare', { storyId: second.id }, guest.token);
-  await app.post('/generate', { storyId: second.id, branchId: second.root.id, levels: 3 }, guest.token);
   assert.equal((await resumed.status(guest.token)).remainingToday, 0);
-  assert.equal((await resumed.status(guest.token)).completedToday, 2);
+  assert.equal((await resumed.status(guest.token)).completedToday, 1);
   assert.equal((await resumed.status(guest.token)).keyPromptRequired, true);
   assert.equal((await app.post('/trial/stories', { scenario: '另一个', context: '故事', mode: 'light' }, guest.token)).status, 429);
-  assert.deepEqual(app.credentials, Array(4).fill('Bearer server-secret'));
+  assert.deepEqual(app.credentials, Array(2).fill('Bearer server-secret'));
+});
+
+test('free story allowance resets on the next day', async () => {
+  let time = Date.UTC(2026, 9, 22, 0);
+  const store = createTrialStore(null, { now: () => time });
+  const guest = await store.guest();
+  const input = { scenario: '如果重新联系', context: '我们失去了联系。', mode: 'light' };
+  const first = await store.createStory(guest.token, input);
+  await store.abandon(guest.token, first.id);
+  await assert.rejects(store.createStory(guest.token, input), { status: 429 });
+  time += 24 * 60 * 60 * 1000;
+  assert.equal((await store.status(guest.token)).remainingToday, 1);
+  assert.ok((await store.createStory(guest.token, input)).id);
 });
 
 test('personal key is required for own-funded stories and is never persisted or charged to site quota', async t => {
@@ -123,7 +131,7 @@ test('personal key is required for own-funded stories and is never persisted or 
   assert.equal((await app.post('/prepare', { storyId: own.id }, token, 'test-user-key')).status, 200);
   assert.equal((await app.post('/generate', { storyId: own.id, branchId: own.root.id, levels: 3 }, token, 'test-user-key')).status, 200);
   assert.deepEqual(app.credentials, ['Bearer test-user-key', 'Bearer test-user-key']);
-  assert.equal((await createTrialStore(app.path).status(token)).remainingToday, 2);
+  assert.equal((await createTrialStore(app.path).status(token)).remainingToday, 1);
   assert.equal((await createTrialStore(app.path).status(token)).completedToday, 0);
   assert.equal((await readFile(app.path, 'utf8')).includes('test-user-key'), false);
 
@@ -136,7 +144,7 @@ test('personal key is required for own-funded stories and is never persisted or 
 });
 
 test('server keeps only story structure and quota, and removes the previous story on replacement', async t => {
-  const app = await setup(t);
+  const app = await setup(t, { guestStoriesPerDay: 2 });
   const token = (await app.post('/trial/guest', {})).body.token;
   const first = (await app.post('/trial/stories', {
     scenario: '如果我说出私密假设', context: '只有浏览器应保存的私人往事', mode: 'light',
@@ -303,5 +311,5 @@ test('trial convergence validates the frontier, keeps failed output unsaved, and
   const resumed = await app.post('/generate', { storyId: story.id, branchId: currentId, levels: 4 }, token);
   assert.equal(resumed.status, 200);
   assert.equal(resumed.body.branches[0].title, '形成稳定边界');
-  assert.equal((await createTrialStore(app.path).status(token)).remainingToday, 1);
+  assert.equal((await createTrialStore(app.path).status(token)).remainingToday, 0);
 });

@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { plannedLevels, SUBTREE_MODES, isSubtreeStrategy, subtreeTask, subtreeProgress, markSubtreeStage } from '../web/generation-flow.mjs';
 
-const DEFAULT_LIMITS = { guestStoriesPerDay: 2, siteStoriesPerDay: 50, storyModelCalls: 80, siteModelCallsPerDay: 1000 };
+const DEFAULT_LIMITS = { guestStoriesPerDay: 1, siteStoriesPerDay: 50, storyModelCalls: 80, siteModelCallsPerDay: 1000 };
 const MODE_DEPTH = { light: 8, normal: 12, deep: 15 };
 const CLAIM_MS = 15 * 60 * 1000;
 
@@ -183,7 +183,7 @@ export function createTrialStore(filePath, { now = Date.now, limits = {}, stateB
         const day = dayAt(now());
         if (funding === 'site') {
           const site = data.days[day] ||= { stories: 0, modelCalls: 0 };
-          if ((guest.starts[day] || 0) >= caps.guestStoriesPerDay) throw new TrialError(429, '今天的两次免费新故事已用完，可配置自己的模型 API 继续使用');
+          if ((guest.starts[day] || 0) >= caps.guestStoriesPerDay) throw new TrialError(429, '今天的免费新故事次数已用完，可配置自己的模型 API 继续使用');
           if (site.stories >= caps.siteStoriesPerDay || site.modelCalls >= caps.siteModelCallsPerDay) {
             throw new TrialError(429, '今天的全站体验额度已用完，可配置自己的模型 API 继续使用');
           }

@@ -244,7 +244,7 @@ test('trial enforces stage order, resumes atomic subtree commits and counts open
   assert.equal((await generate(a.id, 3)).status, 409);
   assert.equal(app.requests.length, count);
   assert.equal((await store.status(guest.token)).completedToday, 1);
-  assert.equal((await store.status(guest.token)).remainingToday, 1);
+  assert.equal((await store.status(guest.token)).remainingToday, 0);
 });
 
 test('persisted v1 trial resumes with its original budget and prompt after restart', async t => {
@@ -271,7 +271,7 @@ test('persisted v1 trial resumes with its original budget and prompt after resta
   const saved = await restoredStore.getStory(guest.token, story.id);
   assert.equal(saved.generationStrategy, PREVIOUS_SUBTREE_STRATEGY);
   assert.equal(saved.root.children[0].children[0].generationStage, 2);
-  assert.equal((await restoredStore.status(guest.token)).remainingToday, 1);
+  assert.equal((await restoredStore.status(guest.token)).remainingToday, 0);
 });
 
 test('route selection commits only the validated tree and consumes model-call quota, not another story', async t => {
@@ -287,7 +287,7 @@ test('route selection commits only the validated tree and consumes model-call qu
       : envelope({ branches: overBudgetTree() }), store);
     const result = await app.post('/generate', { storyId: story.id, branchId: story.root.id, levels: 3 }, guest.token);
     const saved = await store.getStory(guest.token, story.id);
-    assert.equal((await store.status(guest.token)).remainingToday, 1);
+    assert.equal((await store.status(guest.token)).remainingToday, 0);
     assert.equal(saved.modelCalls, budget);
     if (budget === 1) {
       assert.equal(result.status, 429);

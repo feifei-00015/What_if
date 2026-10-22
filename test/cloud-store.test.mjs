@@ -37,7 +37,7 @@ test('two cloud-backed instances atomically enforce the site story budget', asyn
   const outcomes = await Promise.allSettled([left.createStory(a.token, input), right.createStory(b.token, input)]);
   assert.equal(outcomes.filter(outcome => outcome.status === 'fulfilled').length, 1);
   assert.equal(outcomes.find(outcome => outcome.status === 'rejected').reason.status, 429);
-  assert.equal((await left.status(a.token)).remainingToday + (await right.status(b.token)).remainingToday, 3);
+  assert.equal((await left.status(a.token)).remainingToday + (await right.status(b.token)).remainingToday, 1);
   assert.equal(client.columns.data.includes('两人此前失去联系'), false);
 });
 
